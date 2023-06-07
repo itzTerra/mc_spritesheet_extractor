@@ -76,7 +76,7 @@ def saveImages(images: Dict[str, Image.Image], output_dir = "output/", new_name 
     # Save the extracted images
     if new_name:    
         for i, image in enumerate(images.values()):
-            image.save(f"{output_dir}{new_name}{i}.png")
+            image.save(f"{output_dir}{new_name}_{i}.png")
     else:
         for name, image in images.items():
             image.save(f"{output_dir}{slugify(name)}.png")
