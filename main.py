@@ -1,5 +1,6 @@
 from PIL import Image
 import re
+import os
 from typing import Dict, List, Tuple
 
 from django_slugify import slugify
@@ -51,8 +52,8 @@ def extractImages(spritesheet: Image.Image, coords: List[Dict]) -> Dict[str, Ima
     return images
 
 
-def recolorImages(images: Dict[str, Image.Image], tintColor: Tuple[int]) -> None:
-    for image in images.values():
+def recolorImages(images: List[Image.Image], tintColor: Tuple[int]) -> None:
+    for image in images:
         # Get the pixel data
         pixels = image.load()
 
@@ -64,11 +65,45 @@ def recolorImages(images: Dict[str, Image.Image], tintColor: Tuple[int]) -> None
                     pixels[i, j] = tintColor
     
 
-def saveImages(images: Dict[str, Image.Image]) -> None:
-    for name, image in images.items():
-        # Save the extracted image
-        image.save(f"output/{slugify(name)}.png")
+def saveImages(images: Dict[str, Image.Image], output_dir = "output/", new_name = "") -> None:
+    """
+    new_name -- specify the name of images to which the index gets appended, defaults to existing names
+    """
+    # Create the output folder if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    # Save the extracted images
+    if new_name:    
+        for i, image in enumerate(images.values()):
+            image.save(f"{output_dir}{new_name}{i}.png")
+    else:
+        for name, image in images.items():
+            image.save(f"{output_dir}{slugify(name)}.png")
+    
     print(f"Saved {len(images)} image(s)")
+
+
+def createTexture(images: List[Image.Image], output_path = "output/texture.png") -> None:
+    # Create the output folder if it doesn't exist
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Open the first image to get the dimensions
+    width, height = images[0].size
+    
+    # Create a blank canvas for the combined image
+    combined_image = Image.new('RGBA', (width, height * len(images)))
+    
+    # Iterate through the images and paste them onto the combined image
+    for i, image in enumerate(images):
+        combined_image.paste(image, (0, i * height))
+    
+    # Save the combined image
+    combined_image.save(output_path)
+    
+    print(f"Texture saved as {output_path}")
 
 
 # ===================================== EXAMPLE ==========================================
@@ -86,5 +121,6 @@ if __name__ == "__main__":
 
     coordinates = readCoords(COORDS_PATH, COORDS_NAME)
     images = extractImages(spritesheet, coordinates)
-    recolorImages(images, TEAL)
-    saveImages(images)
+    recolorImages(images.values(), TEAL)
+    saveImages(images, new_name="wisp_glitter")
+    createTexture(list(images.values()), "output/wisp_glitter.png")
